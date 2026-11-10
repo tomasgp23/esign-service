@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E-Sign Admin</title>
+<style>
+  :root { --gold:#c9a84c; --ink:#0b1626; }
+  body { font-family: Arial, sans-serif; margin:0; background:#f4f5f7; color:var(--ink); }
+  header { background:var(--ink); color:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; }
+  header button { background:transparent; border:1px solid #fff; color:#fff; padding:6px 12px; border-radius:6px; cursor:pointer; }
+  main { max-width:860px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border-radius:8px; padding:20px; box-shadow:0 1px 4px rgba(0,0,0,.08); margin-bottom:20px; }
+  h2 { margin-top:0; }
+  label { display:block; font-size:13px; margin:10px 0 4px; font-weight:bold; }
+  input[type=text], input[type=email], input[type=password], input[type=file] {
+    width:100%; box-sizing:border-box; padding:9px; border:1px solid #ccc; border-radius:6px; font-size:14px;
+  }
+  button.primary { background:var(--gold); color:var(--ink); border:none; border-radius:6px; padding:10px 18px;
+    font-weight:bold; cursor:pointer; margin-top:12px; }
+  button.small { background:#e5e7eb; border:none; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:12px; margin-right:6px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { border-bottom:1px solid #eee; padding:8px; text-align:left; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:bold; }
+  .tag.sent, .tag.in_progress { background:#fff3cd; color:#8a6d00; }
+  .tag.completed { background:#d4edda; color:#1a7d3a; }
+  .tag.voided, .tag.declined { background:#f8d7da; color:#a01818; }
+  .tag.draft { background:#e2e3e5; color:#555; }
+  .hidden { display:none; }
+  .err { color:#a01818; font-size:13px; }
+  .two-col { display:flex; gap:16px; }
+  .two-col > div { flex:1; }
+</style>
+</head>
+<body>
+<header>
+  <div>E-Sign Admin</div>
+  <button id="logoutBtn" class="hidden">Log out</button>
+</header>
+<main>
+
+  <div id="setupCard" class="card hidden">
+    <h2>Set up your platform admin account</h2>
+    <p class="muted">This is a one-time step for the person running this e-sign service (not a client organization). You'll get full visibility and control over every client organization from here.</p>
+    <label>Your email</label><input type="email" id="setupEmail">
+    <label>Password</label><input type="password" id="setupPassword">
+    <button class="primary" id="setupBtn">Create platform admin account</button>
+    <p class="err" id="setupErr"></p>
+  </div>
+
+  <div id="authCard" class="card hidden">
+    <div class="two-col">
+      <div>
+        <h2>Log in</h2>
+        <label>Email</label><input type="email" id="loginEmail">
+        <label>Password</label><input type="password" id="loginPassword">
+        <button class="primary" id="loginBtn">Log in</button>
+        <p class="err" id="loginErr"></p>
+      </div>
+      <div>
+        <h2>Register your organization</h2>
+        <p class="muted" style="margin-top:-4px">For client companies only.</p>
+        <label>Company name</label><input type="text" id="suOrgName">
+        <label>Your email</label><input type="email" id="suEmail">
+        <label>Password</label><input type="password" id="suPassword">
+        <button class="primary" id="signupBtn">Create organization</button>
+        <p class="err" id="signupErr"></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="platformCard" class="hidden">
+    <div class="card">
+      <h2>Create a new client organization</h2>
+      <div class="two-col">
+        <input type="text" id="platOrgName" placeholder="Company name">
+        <input type="email" id="platAdminEmail" placeholder="Their admin email">
+      </div>
+      <button class="primary" id="platCreateBtn">Create &amp; send invite</button>
+      <p class="err" id="platCreateErr"></p>
+    </div>
+    <div class="card">
+      <h2>Organizations</h2>
+      <table>
+        <thead><tr><th>Name</th><th>Status</th><th>Users</th><th>Envelopes</th><th></th></tr></thead>
+        <tbody id="platOrgRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="appCard" class="hidden">
+    <div class="card">
+      <h2>Send a new envelope</h2>
+      <label>Document title</label><input type="text" id="envTitle">
+      <label>PDF file</label><input type="file" id="envFile" accept="application/pdf">
+      <div class="two-col">
+        <div>
+          <label>Signer 1 — name</label><input type="text" id="r1Name">
+          <label>Signer 1 — email</label><input type="email" id="r1Email">
+          <label>Signer 1 — mobile (optional, E.164)</label><input type="text" id="r1Mobile" placeholder="+15551234567">
+        </div>
+        <div>
+          <label>Signer 2 — name (optional)</label><input type="text" id="r2Name">
+          <label>Signer 2 — email</label><input type="email" id="r2Email">
+          <label><input type="checkbox" id="sequential"> Sequential (signer 2 notified after signer 1 finishes)</label>
+        </div>
+      </div>
+      <button class="primary" id="sendBtn">Send for signature</button>
+      <p class="err" id="sendErr"></p>
+    </div>
+
+    <div class="card">
+      <h2>Invite a teammate</h2>
+      <div class="two-col">
+        <input type="email" id="inviteEmail" placeholder="teammate@company.com">
+        <select id="inviteRole"><option value="member">Member</option><option value="org_admin">Admin</option></select>
+      </div>
+      <button class="primary" id="inviteBtn">Send invite</button>
+      <p class="err" id="inviteErr"></p>
+    </div>
+
+    <div class="card">
+      <h2>Envelopes</h2>
+      <table>
+        <thead><tr><th>Title</th><th>Status</th><th>Sent</th><th>Risk</th><th></th></tr></thead>
+        <tbody id="envelopeRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+<script src="admin.js"></script>
+</body>
+</html>

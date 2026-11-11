@@ -16,7 +16,7 @@ router.get('/', (req, res) => {
 
 router.post('/invite', requireOrgAdmin, async (req, res) => {
   const { email, role } = req.body || {};
-  if (!email || !['org_admin', 'member'].includes(role)) {
+  if (!email || !['org_admin', 'it', 'member'].includes(role)) {
     return res.status(400).json({ error: 'missing_fields' });
   }
 
@@ -37,7 +37,7 @@ router.post('/invite', requireOrgAdmin, async (req, res) => {
   await sendMail({
     to: email,
     subject: `You've been invited to join on E-Sign`,
-    html: `<p>You've been invited to join as a ${role === 'org_admin' ? 'admin' : 'member'}.</p>
+    html: `<p>You've been invited to join as ${role === 'org_admin' ? 'an admin' : role === 'it' ? 'IT' : 'a member'}.</p>
            <p><a href="${link}">Accept invite</a></p>`,
   });
 

@@ -14,14 +14,27 @@
       <div class="page-header"><h1>API &amp; Webhooks</h1></div>
 
       <div class="card">
-        <h2>API key</h2>
-        <p class="muted">Lets another system send envelopes through this org via <code>POST /api/v1/envelopes</code>, authenticated with this key as a Bearer token.</p>
-        <button class="primary" id="genKeyBtn">Generate new API key</button>
-        <p id="apiKeyExisting" class="muted"></p>
-        <div id="apiKeyReveal" class="hidden notice" style="margin-top:10px;">
-          <strong>Copy this now — it won't be shown again:</strong>
-          <div id="apiKeyValue" style="font-family:monospace;word-break:break-all;margin-top:6px;"></div>
+        <h2>API clients</h2>
+        <p class="muted">
+          Another system first exchanges a client ID + secret for a short-lived access token
+          (<code>POST /api/v1/auth/token</code>), then calls <code>POST /api/v1/envelopes</code>
+          with <code>Authorization: Bearer &lt;token&gt;</code>. Revoking a client here takes effect immediately,
+          even on tokens it already holds.
+        </p>
+        <label>Name (optional, to tell clients apart)</label>
+        <input type="text" id="newClientName" placeholder="e.g. Production CRM">
+        <button class="primary" id="genClientBtn">Generate new API client</button>
+        <div id="clientReveal" class="hidden notice" style="margin-top:10px;">
+          <strong>Copy this now — the secret won't be shown again:</strong>
+          <div style="font-family:monospace;word-break:break-all;margin-top:8px;">
+            client_id: <span id="revealClientId"></span><br>
+            secret: <span id="revealSecret"></span>
+          </div>
         </div>
+        <table style="margin-top:14px">
+          <thead><tr><th>Name</th><th>Client ID</th><th>Status</th><th>Last used</th><th></th></tr></thead>
+          <tbody id="clientRows"></tbody>
+        </table>
       </div>
 
       <div class="card">

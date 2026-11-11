@@ -18,7 +18,8 @@ const signerRoutes = require('./src/routes/public/signer');
 const platformOrgRoutes = require('./src/routes/platform/organizations');
 const v1EnvelopeRoutes = require('./src/routes/v1/envelopes');
 const v1TemplateRoutes = require('./src/routes/v1/templates');
-const apiKeyRoutes = require('./src/routes/org/apiKey');
+const v1AuthRoutes = require('./src/routes/v1/auth');
+const apiClientRoutes = require('./src/routes/org/apiClients');
 
 const app = express();
 
@@ -30,8 +31,9 @@ app.use('/api/org/members', requireOrgSession, memberRoutes);
 app.use('/api/org/templates', requireOrgSession, templateRoutes);
 app.use('/api/org/envelopes', requireOrgSession, envelopeRoutes);
 app.use('/api/platform/organizations', requireOrgSession, requirePlatformAdmin, platformOrgRoutes);
-app.use('/api/org/integration', requireOrgSession, apiKeyRoutes);
+app.use('/api/org/integration', requireOrgSession, apiClientRoutes);
 app.use('/api/public', signerRoutes);
+app.use('/api/v1/auth', v1AuthRoutes);
 app.use('/api/v1/envelopes', requireApiKey, v1EnvelopeRoutes);
 app.use('/api/v1/templates', requireApiKey, v1TemplateRoutes);
 

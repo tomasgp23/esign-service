@@ -1,6 +1,6 @@
 async function boot() {
   const me = await requireClientOrg();
-  if (!me) return;
+  if (!me || !enforcePageRole(me)) return;
   renderSidebar(me);
   loadMembers();
 }

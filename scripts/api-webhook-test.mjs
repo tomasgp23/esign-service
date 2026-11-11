@@ -78,13 +78,46 @@ async function main() {
 
   await call(`/api/org/templates/${template.id}/set-allowed`, { allowed: true });
 
-  const { data: keyRes } = await call('/api/org/integration/api-key/generate', {});
-  const apiKey = keyRes.apiKey;
-  console.log('generated api key prefix:', apiKey.slice(0, 12));
+  // API/webhook settings are IT-only now — org_admin can't touch them.
+  // Invite an IT teammate, accept the invite, and switch sessions to them.
+  const beforeInvite = logSize();
+  await call('/api/org/members/invite', { email: 'it-person@example.com', role: 'it' });
+  await new Promise((r) => setTimeout(r, 200));
+  const inviteLog = fs.readFileSync(LOG, 'utf8').slice(beforeInvite);
+  const inviteLinkMatch = inviteLog.match(/accept-invite\.html#t=([^"&\s<]+)/);
+  if (!inviteLinkMatch) throw new Error('IT invite link not found in log');
+
+  await call('/api/auth/accept-invite', { token: inviteLinkMatch[1], password: 'password123' });
+  console.log('accepted IT invite, now logged in as IT user');
+
+  const { data: genRes } = await call('/api/org/integration/generate', { name: 'Test CRM' });
+  const { clientId, clientSecret } = genRes;
+  console.log('generated api client:', clientId);
 
   await call('/api/org/integration/webhook', { webhookUrl: 'http://localhost:4999/webhook' });
   const { data: integ } = await call('/api/org/integration', null, { method: 'GET' });
   const webhookSecret = integ.webhook_secret;
+
+  // --- exchange client_id + secret for a bearer token (the new two-step flow) ---
+  cookie = ''; // the token exchange is unauthenticated by session, just like a real external caller
+  const tokenRes = await fetch(`${BASE}/api/v1/auth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientId, clientSecret }),
+  });
+  const tokenData = await tokenRes.json();
+  if (!tokenRes.ok) throw new Error('token exchange failed: ' + JSON.stringify(tokenData));
+  const apiKey = tokenData.token;
+  console.log('exchanged client credentials for a bearer token, expiresIn:', tokenData.expiresIn);
+
+  // --- a revoked/invalid client_id+secret must be rejected ---
+  const badTokenRes = await fetch(`${BASE}/api/v1/auth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientId, clientSecret: 'wrong-secret' }),
+  });
+  if (badTokenRes.status !== 401) throw new Error('expected wrong secret to be rejected with 401');
+  console.log('wrong secret correctly rejected with 401');
 
   // --- strict variable validation: missing one ---
   const missingRes = await call(
@@ -176,6 +209,17 @@ async function main() {
   const expectedSig2 = crypto.createHmac('sha256', webhookSecret).update(completedHook.body).digest('hex');
   if (completedHook.signature !== `sha256=${expectedSig2}`) throw new Error('webhook signature mismatch for envelope.completed');
   console.log('envelope.completed webhook received with valid signature');
+
+  // --- revoking the client must take effect immediately, even though the
+  // existing bearer token hasn't expired yet ---
+  await call('/api/auth/login', { email: 'it-person@example.com', password: 'password123' });
+  const { data: clientList } = await call('/api/org/integration', null, { method: 'GET' });
+  const clientRow = clientList.clients.find((c) => c.client_id === clientId);
+  await call(`/api/org/integration/${clientRow.id}/revoke`, {});
+
+  const afterRevokeRes = await call('/api/v1/templates', null, { apiKey, method: 'GET', allowFail: true });
+  if (afterRevokeRes.status !== 401) throw new Error('expected revoked client’s existing token to be rejected with 401');
+  console.log('revoked client correctly rejected even with a still-unexpired token');
 
   webhookServer.close();
   console.log('\nALL API/WEBHOOK CHECKS PASSED');

@@ -1,14 +1,18 @@
 async function boot() {
   const me = await requireClientOrg();
-  if (!me) return;
+  if (!me || !enforcePageRole(me)) return;
   renderSidebar(me);
   loadIntegration();
 }
 
-document.getElementById('genKeyBtn').addEventListener('click', async () => {
-  const { apiKey } = await api('POST', '/api/org/integration/api-key/generate', {});
-  document.getElementById('apiKeyReveal').classList.remove('hidden');
-  document.getElementById('apiKeyValue').textContent = apiKey;
+document.getElementById('genClientBtn').addEventListener('click', async () => {
+  const { clientId, clientSecret } = await api('POST', '/api/org/integration/generate', {
+    name: document.getElementById('newClientName').value || undefined,
+  });
+  document.getElementById('clientReveal').classList.remove('hidden');
+  document.getElementById('revealClientId').textContent = clientId;
+  document.getElementById('revealSecret').textContent = clientSecret;
+  document.getElementById('newClientName').value = '';
   loadIntegration();
 });
 
@@ -30,11 +34,32 @@ document.getElementById('regenSecretBtn').addEventListener('click', async () => 
 
 async function loadIntegration() {
   const data = await api('GET', '/api/org/integration');
-  document.getElementById('apiKeyExisting').textContent = data.api_key_prefix
-    ? `Current key: ${data.api_key_prefix}… (created ${new Date(data.api_key_created_at).toLocaleString()})`
-    : 'No API key generated yet.';
+
   document.getElementById('webhookUrl').value = data.webhook_url || '';
   document.getElementById('webhookSecret').textContent = data.webhook_secret || '(set a webhook URL to generate one)';
+
+  const clientTbody = document.getElementById('clientRows');
+  clientTbody.innerHTML = data.clients.length
+    ? data.clients
+        .map(
+          (c) => `<tr>
+            <td>${c.name}</td>
+            <td style="font-family:monospace">${c.client_id}</td>
+            <td><span class="tag ${c.is_active ? 'active' : 'disabled'}">${c.is_active ? 'active' : 'revoked'}</span></td>
+            <td>${c.last_used_at ? new Date(c.last_used_at).toLocaleString() : 'never'}</td>
+            <td>${c.is_active ? `<button class="small" data-revoke="${c.id}">Revoke</button>` : ''}</td>
+          </tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="5" class="muted">No API clients yet.</td></tr>';
+
+  clientTbody.querySelectorAll('[data-revoke]').forEach((btn) =>
+    btn.addEventListener('click', async () => {
+      if (!confirm('Revoke this API client? Any token it already holds stops working immediately.')) return;
+      await api('POST', `/api/org/integration/${btn.dataset.revoke}/revoke`, {});
+      loadIntegration();
+    }),
+  );
 
   const tbody = document.getElementById('webhookDeliveryRows');
   tbody.innerHTML = data.deliveries.length

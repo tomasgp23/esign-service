@@ -18,4 +18,13 @@ function requirePlatformAdmin(req, res, next) {
   next();
 }
 
-module.exports = { requireOrgSession, requireOrgAdmin, requirePlatformAdmin };
+// IT owns API keys and webhooks exclusively — org_admin does not have this,
+// by design (the three roles have non-overlapping scopes: org_admin runs
+// envelopes/templates/people, IT runs the integration surface, member just
+// sends/views).
+function requireIT(req, res, next) {
+  if (req.user?.role !== 'it') return res.status(403).json({ error: 'it_role_required' });
+  next();
+}
+
+module.exports = { requireOrgSession, requireOrgAdmin, requirePlatformAdmin, requireIT };

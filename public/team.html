@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar" class="sidebar"></div>
+  <div class="content">
+    <div class="content-inner">
+      <div class="page-header"><h1>Team</h1></div>
+
+      <div class="card">
+        <h2>Invite a teammate</h2>
+        <div class="two-col">
+          <div><input type="email" id="inviteEmail" placeholder="teammate@company.com"></div>
+          <div>
+            <select id="inviteRole"><option value="member">Member</option><option value="org_admin">Admin</option></select>
+          </div>
+        </div>
+        <button class="primary" id="inviteBtn">Send invite</button>
+        <p class="err" id="inviteErr"></p>
+      </div>
+
+      <div class="card">
+        <h2>Members</h2>
+        <table>
+          <thead><tr><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
+          <tbody id="memberRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="team.js"></script>
+</body>
+</html>

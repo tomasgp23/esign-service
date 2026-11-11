@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Envelopes</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar" class="sidebar"></div>
+  <div class="content">
+    <div class="content-inner">
+      <div class="page-header"><h1>Envelopes</h1></div>
+
+      <div class="card">
+        <h2>Send a new envelope</h2>
+        <label>Document title</label><input type="text" id="envTitle">
+        <label>Source</label>
+        <select id="envSource">
+          <option value="upload">Upload a PDF</option>
+          <option value="template">Use a template</option>
+        </select>
+        <div id="envUploadBlock">
+          <label>PDF file</label><input type="file" id="envFile" accept="application/pdf">
+        </div>
+        <div id="envTemplateBlock" class="hidden">
+          <label>Template</label>
+          <select id="envTemplateSelect"></select>
+          <div id="envTemplateVars"></div>
+        </div>
+        <div class="two-col">
+          <div>
+            <label>Signer 1 — name</label><input type="text" id="r1Name">
+            <label>Signer 1 — email</label><input type="email" id="r1Email">
+            <label>Signer 1 — mobile (optional, E.164)</label><input type="text" id="r1Mobile" placeholder="+15551234567">
+          </div>
+          <div>
+            <label>Signer 2 — name (optional)</label><input type="text" id="r2Name">
+            <label>Signer 2 — email</label><input type="email" id="r2Email">
+            <label><input type="checkbox" id="sequential"> Sequential (signer 2 notified after signer 1 finishes)</label>
+          </div>
+        </div>
+        <button class="primary" id="sendBtn">Send for signature</button>
+        <p class="err" id="sendErr"></p>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead><tr><th>Title</th><th>Status</th><th>Sent</th><th>Risk</th><th></th></tr></thead>
+          <tbody id="envelopeRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="envelopes.js"></script>
+</body>
+</html>

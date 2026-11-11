@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Templates</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar" class="sidebar"></div>
+  <div class="content">
+    <div class="content-inner">
+      <div class="page-header"><h1>Templates</h1></div>
+
+      <div class="card">
+        <h2>New template</h2>
+        <p class="muted">An HTML template's <code>{{variables}}</code> are detected automatically as you type — exactly what an API caller (or the send form) must supply.</p>
+        <label>Name</label><input type="text" id="tplName">
+        <label>Signer roles</label>
+        <label><input type="checkbox" id="tplRole1" checked disabled> Owner 1 (always included)</label>
+        <label><input type="checkbox" id="tplRole2"> Owner 2</label>
+        <label>Body (supports <code>{{tokens}}</code>, and h1/h2/h3/p/ul/li/b/i/br tags)</label>
+        <textarea id="tplBody" rows="8"></textarea>
+        <p class="muted">Detected variables: <span id="tplVarsPreview">(none)</span></p>
+        <button class="primary" id="tplSaveBtn">Save template</button>
+        <p class="err" id="tplErr"></p>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead><tr><th>Name</th><th>Version</th><th>Variables</th><th>Status</th><th></th></tr></thead>
+          <tbody id="tplRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="templates.js"></script>
+</body>
+</html>

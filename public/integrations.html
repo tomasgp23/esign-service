@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API &amp; Webhooks</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar" class="sidebar"></div>
+  <div class="content">
+    <div class="content-inner">
+      <div class="page-header"><h1>API &amp; Webhooks</h1></div>
+
+      <div class="card">
+        <h2>API key</h2>
+        <p class="muted">Lets another system send envelopes through this org via <code>POST /api/v1/envelopes</code>, authenticated with this key as a Bearer token.</p>
+        <button class="primary" id="genKeyBtn">Generate new API key</button>
+        <p id="apiKeyExisting" class="muted"></p>
+        <div id="apiKeyReveal" class="hidden notice" style="margin-top:10px;">
+          <strong>Copy this now — it won't be shown again:</strong>
+          <div id="apiKeyValue" style="font-family:monospace;word-break:break-all;margin-top:6px;"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Webhook</h2>
+        <label>Webhook URL</label>
+        <input type="text" id="webhookUrl" placeholder="https://your-crm.example.com/webhooks/esign">
+        <button class="primary" id="saveWebhookBtn">Save webhook URL</button>
+        <p class="err" id="webhookErr"></p>
+        <p class="muted" style="margin-top:14px">Signing secret: <span id="webhookSecret" style="font-family:monospace"></span>
+          <button class="small" id="regenSecretBtn">Regenerate</button></p>
+
+        <h3>Recent deliveries</h3>
+        <table>
+          <thead><tr><th>Event</th><th>Attempt</th><th>Status</th><th>When</th></tr></thead>
+          <tbody id="webhookDeliveryRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="integrations.js"></script>
+</body>
+</html>

@@ -32,7 +32,7 @@
       body: JSON.stringify({ token, password }),
     });
     if (res.ok) {
-      location.href = '/admin.html';
+      location.href = '/login.html';
     } else {
       const data = await res.json().catch(() => ({}));
       errEl.textContent =

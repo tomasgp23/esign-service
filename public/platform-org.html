@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Organization — Platform Admin</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar" class="sidebar"></div>
+  <div class="content">
+    <div class="content-inner">
+      <div class="page-header">
+        <h1 id="orgName">Organization</h1>
+        <a class="back" href="platform.html">&larr; All organizations</a>
+      </div>
+
+      <div class="card">
+        <h2>Users</h2>
+        <table>
+          <thead><tr><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
+          <tbody id="orgUsers"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Pending invites</h2>
+        <table>
+          <thead><tr><th>Email</th><th>Role</th><th>Expires</th><th></th></tr></thead>
+          <tbody id="orgInvites"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Envelopes</h2>
+        <table>
+          <thead><tr><th>Title</th><th>Status</th><th>Sent</th><th>Risk</th></tr></thead>
+          <tbody id="orgEnvelopes"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="platform-org.js"></script>
+</body>
+</html>

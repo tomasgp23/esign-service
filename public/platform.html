@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform Admin</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar" class="sidebar"></div>
+  <div class="content">
+    <div class="content-inner">
+      <div class="page-header"><h1>Organizations</h1></div>
+
+      <div class="card">
+        <h2>Create a new client organization</h2>
+        <div class="two-col">
+          <div><label>Company name</label><input type="text" id="platOrgName"></div>
+          <div><label>Their admin email</label><input type="email" id="platAdminEmail"></div>
+        </div>
+        <button class="primary" id="platCreateBtn">Create &amp; send invite</button>
+        <p class="err" id="platCreateErr"></p>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead><tr><th>Name</th><th>Status</th><th>Users</th><th>Envelopes</th><th></th></tr></thead>
+          <tbody id="platOrgRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="platform.js"></script>
+</body>
+</html>

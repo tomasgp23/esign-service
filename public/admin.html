@@ -70,7 +70,7 @@
   </div>
 
   <div id="platformCard" class="hidden">
-    <div class="card">
+    <div class="card plat-list-view">
       <h2>Create a new client organization</h2>
       <div class="two-col">
         <input type="text" id="platOrgName" placeholder="Company name">
@@ -79,11 +79,34 @@
       <button class="primary" id="platCreateBtn">Create &amp; send invite</button>
       <p class="err" id="platCreateErr"></p>
     </div>
-    <div class="card">
+    <div class="card plat-list-view">
       <h2>Organizations</h2>
       <table>
         <thead><tr><th>Name</th><th>Status</th><th>Users</th><th>Envelopes</th><th></th></tr></thead>
         <tbody id="platOrgRows"></tbody>
+      </table>
+    </div>
+
+    <div id="orgDetailCard" class="card hidden">
+      <button class="small" id="orgDetailBack">&larr; Back to organizations</button>
+      <h2 id="orgDetailName"></h2>
+
+      <h3>Users</h3>
+      <table>
+        <thead><tr><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
+        <tbody id="orgDetailUsers"></tbody>
+      </table>
+
+      <h3>Pending invites</h3>
+      <table>
+        <thead><tr><th>Email</th><th>Role</th><th>Expires</th><th></th></tr></thead>
+        <tbody id="orgDetailInvites"></tbody>
+      </table>
+
+      <h3>Envelopes</h3>
+      <table>
+        <thead><tr><th>Title</th><th>Status</th><th>Sent</th><th>Risk</th></tr></thead>
+        <tbody id="orgDetailEnvelopes"></tbody>
       </table>
     </div>
   </div>

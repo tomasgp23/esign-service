@@ -212,6 +212,7 @@ async function loadOrganizations() {
       <td>${o.user_count}</td>
       <td>${o.envelope_count}</td>
       <td>
+        <button class="small" data-view="${o.id}">View</button>
         <button class="small" data-toggle="${o.id}" data-active="${o.is_active}">${o.is_active ? 'Disable' : 'Enable'}</button>
       </td>`;
     tbody.appendChild(tr);
@@ -223,6 +224,64 @@ async function loadOrganizations() {
       loadOrganizations();
     }),
   );
+  tbody.querySelectorAll('[data-view]').forEach((btn) =>
+    btn.addEventListener('click', () => showOrgDetail(btn.dataset.view)),
+  );
 }
+
+async function showOrgDetail(orgId) {
+  const { organization, users, pendingInvites, envelopes } = await api('GET', `/api/platform/organizations/${orgId}`);
+
+  document.getElementById('orgDetailName').textContent = organization.name;
+
+  const usersBody = document.getElementById('orgDetailUsers');
+  usersBody.innerHTML = users.length
+    ? users.map((u) => `<tr><td>${u.email}</td><td>${u.role}</td><td>${new Date(u.created_at).toLocaleString()}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="muted">No users yet.</td></tr>';
+
+  const invitesBody = document.getElementById('orgDetailInvites');
+  invitesBody.innerHTML = '';
+  if (!pendingInvites.length) {
+    invitesBody.innerHTML = '<tr><td colspan="4" class="muted">None pending.</td></tr>';
+  } else {
+    for (const inv of pendingInvites) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${inv.email}</td>
+        <td>${inv.role}</td>
+        <td>${new Date(inv.expires_at).toLocaleString()}</td>
+        <td><button class="small" data-resend="${inv.id}">Resend</button></td>`;
+      invitesBody.appendChild(tr);
+    }
+    invitesBody.querySelectorAll('[data-resend]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        await api('POST', `/api/platform/organizations/${orgId}/invites/${btn.dataset.resend}/resend`, {});
+        showOrgDetail(orgId);
+      }),
+    );
+  }
+
+  const envBody = document.getElementById('orgDetailEnvelopes');
+  envBody.innerHTML = envelopes.length
+    ? envelopes
+        .map(
+          (e) => `<tr>
+            <td>${e.title}</td>
+            <td><span class="tag ${e.status}">${e.status}</span></td>
+            <td>${e.sent_at ? new Date(e.sent_at).toLocaleString() : ''}</td>
+            <td>${e.risk_flags.length ? '⚠ ' + e.risk_flags.length : ''}</td>
+          </tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="4" class="muted">No envelopes yet.</td></tr>';
+
+  document.querySelectorAll('.plat-list-view').forEach((el) => el.classList.add('hidden'));
+  document.getElementById('orgDetailCard').classList.remove('hidden');
+}
+
+document.getElementById('orgDetailBack').addEventListener('click', () => {
+  document.getElementById('orgDetailCard').classList.add('hidden');
+  document.querySelectorAll('.plat-list-view').forEach((el) => el.classList.remove('hidden'));
+});
 
 boot();

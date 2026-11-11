@@ -67,6 +67,55 @@ router.post('/', async (req, res) => {
   res.json({ ok: true, orgId });
 });
 
+router.get('/:id', (req, res) => {
+  const org = db.prepare('select * from organizations where id = ?').get(req.params.id);
+  if (!org) return res.status(404).json({ error: 'not_found' });
+
+  const users = db
+    .prepare('select id, email, role, created_at from users where org_id = ? order by created_at')
+    .all(org.id);
+  const pendingInvites = db
+    .prepare(
+      `select id, email, role, expires_at, created_at from invites
+       where org_id = ? and accepted_at is null order by created_at desc`,
+    )
+    .all(org.id);
+  const envelopes = db
+    .prepare(
+      `select id, title, status, risk_flags, created_at, sent_at, completed_at
+       from esign_envelopes where org_id = ? order by created_at desc`,
+    )
+    .all(org.id)
+    .map((e) => ({ ...e, risk_flags: JSON.parse(e.risk_flags) }));
+
+  res.json({ organization: { ...org, is_active: !!org.is_active }, users, pendingInvites, envelopes });
+});
+
+// Re-sends a client organization's pending admin invite with a fresh token
+// (mirrors the member-invite "remind" pattern used everywhere else).
+router.post('/:id/invites/:inviteId/resend', async (req, res) => {
+  const invite = db
+    .prepare('select * from invites where id = ? and org_id = ? and accepted_at is null')
+    .get(req.params.inviteId, req.params.id);
+  if (!invite) return res.status(404).json({ error: 'not_found' });
+
+  const org = db.prepare('select name from organizations where id = ?').get(req.params.id);
+  const token = randomToken();
+  const tokenHash = sha256Hex(token);
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  db.prepare('update invites set token_hash = ?, expires_at = ? where id = ?').run(tokenHash, expiresAt, invite.id);
+
+  const base = process.env.PUBLIC_BASE_URL || 'http://localhost:4100';
+  const link = `${base}/accept-invite.html#t=${token}`;
+  await sendMail({
+    to: invite.email,
+    subject: `Reminder: your organization "${org.name}" is waiting for setup`,
+    html: `<p>Set your password to get started:</p><p><a href="${link}">Accept invite</a></p>`,
+  });
+
+  res.json({ ok: true });
+});
+
 router.post('/:id/disable', (req, res) => {
   const org = db.prepare('select * from organizations where id = ?').get(req.params.id);
   if (!org) return res.status(404).json({ error: 'not_found' });

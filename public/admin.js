@@ -38,6 +38,8 @@ async function boot() {
     } else {
       document.getElementById('appCard').classList.remove('hidden');
       loadEnvelopes();
+      loadTemplates();
+      loadIntegration();
     }
     return;
   } catch {
@@ -104,17 +106,46 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   boot();
 });
 
+document.getElementById('envSource').addEventListener('change', (e) => {
+  const useTemplate = e.target.value === 'template';
+  document.getElementById('envUploadBlock').classList.toggle('hidden', useTemplate);
+  document.getElementById('envTemplateBlock').classList.toggle('hidden', !useTemplate);
+});
+
+let sendTemplates = [];
+async function loadTemplatesForSend() {
+  const { templates } = await api('GET', '/api/org/templates');
+  sendTemplates = templates;
+  const select = document.getElementById('envTemplateSelect');
+  select.innerHTML = templates
+    .filter((t) => t.esign_allowed)
+    .map((t) => `<option value="${t.id}">${t.name} (v${t.version})</option>`)
+    .join('') || '<option value="">No approved templates yet</option>';
+  renderTemplateVarInputs();
+}
+
+function renderTemplateVarInputs() {
+  const select = document.getElementById('envTemplateSelect');
+  const container = document.getElementById('envTemplateVars');
+  const template = sendTemplates.find((t) => t.id === select.value);
+  if (!template || !template.variables.length) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = template.variables
+    .map((v) => `<label>${v}</label><input type="text" data-var="${v}">`)
+    .join('');
+}
+
+document.getElementById('envTemplateSelect').addEventListener('change', renderTemplateVarInputs);
+
 document.getElementById('sendBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('sendErr');
   errEl.textContent = '';
   try {
-    const file = document.getElementById('envFile').files[0];
-    if (!file) throw new Error('no_file');
-    const fileBase64 = await fileToBase64(file);
-
+    const useTemplate = document.getElementById('envSource').value === 'template';
     const body = {
       title: document.getElementById('envTitle').value,
-      fileBase64,
       recipient1: {
         fullName: document.getElementById('r1Name').value,
         email: document.getElementById('r1Email').value,
@@ -126,14 +157,141 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
     const r2Email = document.getElementById('r2Email').value;
     if (r2Name && r2Email) body.recipient2 = { fullName: r2Name, email: r2Email };
 
+    if (useTemplate) {
+      const templateId = document.getElementById('envTemplateSelect').value;
+      if (!templateId) throw new Error('no_template');
+      body.esignTemplateId = templateId;
+      body.mergeData = {};
+      document.querySelectorAll('#envTemplateVars [data-var]').forEach((input) => {
+        body.mergeData[input.dataset.var] = input.value;
+      });
+    } else {
+      const file = document.getElementById('envFile').files[0];
+      if (!file) throw new Error('no_file');
+      body.fileBase64 = await fileToBase64(file);
+    }
+
     await api('POST', '/api/org/envelopes', body);
     document.getElementById('envTitle').value = '';
     document.getElementById('envFile').value = '';
     loadEnvelopes();
   } catch (err) {
-    errEl.textContent = err.message === 'no_file' ? 'Please choose a PDF file.' : 'Could not send envelope.';
+    errEl.textContent =
+      err.message === 'no_file' ? 'Please choose a PDF file.' :
+      err.message === 'no_template' ? 'Please choose a template.' :
+      err.data?.missing ? `Missing: ${err.data.missing.join(', ')}` :
+      err.data?.unexpected ? `Unexpected: ${err.data.unexpected.join(', ')}` : 'Could not send envelope.';
   }
 });
+
+function extractVariablesClient(bodyHtml) {
+  const found = new Set();
+  const re = /\{\{\s*([\w.]+)\s*\}\}/g;
+  let m;
+  while ((m = re.exec(bodyHtml || ''))) found.add(m[1]);
+  return [...found].sort();
+}
+
+document.getElementById('tplBody').addEventListener('input', (e) => {
+  const vars = extractVariablesClient(e.target.value);
+  document.getElementById('tplVarsPreview').textContent = vars.length ? vars.join(', ') : '(none)';
+});
+
+document.getElementById('tplSaveBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('tplErr');
+  errEl.textContent = '';
+  try {
+    const signerRoles = ['owner_1'];
+    if (document.getElementById('tplRole2').checked) signerRoles.push('owner_2');
+
+    await api('POST', '/api/org/templates', {
+      name: document.getElementById('tplName').value,
+      kind: 'html',
+      bodyHtml: document.getElementById('tplBody').value,
+      signerRoles,
+    });
+    document.getElementById('tplName').value = '';
+    document.getElementById('tplBody').value = '';
+    document.getElementById('tplVarsPreview').textContent = '(none)';
+    loadTemplates();
+  } catch {
+    errEl.textContent = 'Could not save template.';
+  }
+});
+
+async function loadTemplates() {
+  const { templates } = await api('GET', '/api/org/templates');
+  const tbody = document.getElementById('tplRows');
+  tbody.innerHTML = templates.length
+    ? templates
+        .map(
+          (t) => `<tr>
+            <td>${t.name}</td>
+            <td>v${t.version}</td>
+            <td>${t.variables.length ? t.variables.join(', ') : '—'}</td>
+            <td><span class="tag ${t.esign_allowed ? 'completed' : 'draft'}">${t.esign_allowed ? 'approved' : 'not approved'}</span></td>
+            <td><button class="small" data-tpl-toggle="${t.id}" data-allowed="${t.esign_allowed}">${t.esign_allowed ? 'Revoke' : 'Approve'}</button></td>
+          </tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="5" class="muted">No templates yet.</td></tr>';
+
+  tbody.querySelectorAll('[data-tpl-toggle]').forEach((btn) =>
+    btn.addEventListener('click', async () => {
+      const allowed = btn.dataset.allowed === 'true';
+      await api('POST', `/api/org/templates/${btn.dataset.tplToggle}/set-allowed`, { allowed: !allowed });
+      loadTemplates();
+      loadTemplatesForSend();
+    }),
+  );
+  loadTemplatesForSend();
+}
+
+document.getElementById('genKeyBtn').addEventListener('click', async () => {
+  const { apiKey } = await api('POST', '/api/org/integration/api-key/generate', {});
+  document.getElementById('apiKeyReveal').classList.remove('hidden');
+  document.getElementById('apiKeyValue').textContent = apiKey;
+  loadIntegration();
+});
+
+document.getElementById('saveWebhookBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('webhookErr');
+  errEl.textContent = '';
+  try {
+    await api('POST', '/api/org/integration/webhook', { webhookUrl: document.getElementById('webhookUrl').value });
+    loadIntegration();
+  } catch {
+    errEl.textContent = 'Could not save webhook URL.';
+  }
+});
+
+document.getElementById('regenSecretBtn').addEventListener('click', async () => {
+  await api('POST', '/api/org/integration/webhook/regenerate-secret', {});
+  loadIntegration();
+});
+
+async function loadIntegration() {
+  const data = await api('GET', '/api/org/integration');
+  document.getElementById('apiKeyExisting').textContent = data.api_key_prefix
+    ? `Current key: ${data.api_key_prefix}… (created ${new Date(data.api_key_created_at).toLocaleString()})`
+    : 'No API key generated yet.';
+  document.getElementById('webhookUrl').value = data.webhook_url || '';
+  document.getElementById('webhookSecret').textContent = data.webhook_secret || '(set a webhook URL to generate one)';
+
+  const tbody = document.getElementById('webhookDeliveryRows');
+  tbody.innerHTML = data.deliveries.length
+    ? data.deliveries
+        .map(
+          (d) => `<tr>
+            <td>${d.event_type}</td>
+            <td>${d.attempt}</td>
+            <td>${d.status_code ?? 'failed'}</td>
+            <td>${new Date(d.created_at).toLocaleString()}</td>
+          </tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="4" class="muted">No deliveries yet.</td></tr>';
+}
 
 document.getElementById('inviteBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('inviteErr');

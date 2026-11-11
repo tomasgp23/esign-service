@@ -4,6 +4,7 @@ const { readFile, writeFile } = require('./storage');
 const { sha256Hex } = require('./crypto');
 const { logEvent } = require('./hashChain');
 const { computeRiskFlags } = require('./riskFlags');
+const { deliverWebhook } = require('./webhooks');
 
 const updateEnvelopeCompleteStmt = db.prepare(`
   update esign_envelopes
@@ -99,6 +100,10 @@ async function finalize(envelopeId) {
     event_type: 'envelope.completed',
     details: { sealed: false, risk_flags: riskFlags },
   });
+
+  const org = db.prepare('select * from organizations where id = ?').get(envelope.org_id);
+  const updatedEnvelope = db.prepare('select * from esign_envelopes where id = ?').get(envelopeId);
+  deliverWebhook(org, 'envelope.completed', updatedEnvelope).catch(() => {});
 
   return { finalPath, finalHash, riskFlags };
 }

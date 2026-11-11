@@ -115,7 +115,19 @@
     <div class="card">
       <h2>Send a new envelope</h2>
       <label>Document title</label><input type="text" id="envTitle">
-      <label>PDF file</label><input type="file" id="envFile" accept="application/pdf">
+      <label>Source</label>
+      <select id="envSource">
+        <option value="upload">Upload a PDF</option>
+        <option value="template">Use a template</option>
+      </select>
+      <div id="envUploadBlock">
+        <label>PDF file</label><input type="file" id="envFile" accept="application/pdf">
+      </div>
+      <div id="envTemplateBlock" class="hidden">
+        <label>Template</label>
+        <select id="envTemplateSelect"></select>
+        <div id="envTemplateVars"></div>
+      </div>
       <div class="two-col">
         <div>
           <label>Signer 1 — name</label><input type="text" id="r1Name">
@@ -130,6 +142,48 @@
       </div>
       <button class="primary" id="sendBtn">Send for signature</button>
       <p class="err" id="sendErr"></p>
+    </div>
+
+    <div class="card">
+      <h2>Templates</h2>
+      <p class="muted">An HTML template's <code>{{variables}}</code> are detected automatically as you type, and are exactly what an API caller (or the send form above) must supply.</p>
+      <label>Name</label><input type="text" id="tplName">
+      <label>Signer roles</label>
+      <label><input type="checkbox" id="tplRole1" checked disabled> Owner 1 (always included)</label>
+      <label><input type="checkbox" id="tplRole2"> Owner 2</label>
+      <label>Body (supports <code>{{tokens}}</code>, and h1/h2/h3/p/ul/li/b/i/br tags)</label>
+      <textarea id="tplBody" rows="8" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:13px;padding:8px;"></textarea>
+      <p class="muted">Detected variables: <span id="tplVarsPreview">(none)</span></p>
+      <button class="primary" id="tplSaveBtn">Save template</button>
+      <p class="err" id="tplErr"></p>
+      <table style="margin-top:14px">
+        <thead><tr><th>Name</th><th>Version</th><th>Variables</th><th>Status</th><th></th></tr></thead>
+        <tbody id="tplRows"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>API &amp; Webhooks</h2>
+      <p class="muted">Lets another system send envelopes through this org via <code>POST /api/v1/envelopes</code>, authenticated with the API key below.</p>
+      <button class="primary" id="genKeyBtn">Generate new API key</button>
+      <p id="apiKeyExisting" class="muted"></p>
+      <div id="apiKeyReveal" class="hidden" style="background:#fff7e0;border-left:3px solid #c9a84c;padding:10px;margin-top:8px;">
+        <strong>Copy this now — it won't be shown again:</strong>
+        <div id="apiKeyValue" style="font-family:monospace;word-break:break-all;margin-top:6px;"></div>
+      </div>
+
+      <label style="margin-top:16px">Webhook URL</label>
+      <input type="text" id="webhookUrl" placeholder="https://your-crm.example.com/webhooks/esign">
+      <button class="primary" id="saveWebhookBtn">Save webhook URL</button>
+      <p class="err" id="webhookErr"></p>
+      <p class="muted">Webhook signing secret: <span id="webhookSecret" style="font-family:monospace"></span>
+        <button class="small" id="regenSecretBtn">Regenerate</button></p>
+
+      <h3>Recent deliveries</h3>
+      <table>
+        <thead><tr><th>Event</th><th>Attempt</th><th>Status</th><th>When</th></tr></thead>
+        <tbody id="webhookDeliveryRows"></tbody>
+      </table>
     </div>
 
     <div class="card">

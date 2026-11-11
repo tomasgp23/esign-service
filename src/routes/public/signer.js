@@ -9,6 +9,7 @@ const { writeFile } = require('../../lib/storage');
 const { sign } = require('../../lib/signedUrl');
 const { finalize } = require('../../lib/finalize');
 const { inviteRecipient } = require('../../lib/invite');
+const { deliverWebhook } = require('../../lib/webhooks');
 
 const router = express.Router();
 
@@ -326,6 +327,11 @@ router.post('/decline', (req, res) => {
   );
   db.prepare("update esign_envelopes set status = 'declined' where id = ?").run(recipient.envelope_id);
   logSignerEvent(req, { envelopeId: recipient.envelope_id, recipientId: recipient.id, eventType: 'recipient.declined', details: { reason } });
+
+  const envelope = db.prepare('select * from esign_envelopes where id = ?').get(recipient.envelope_id);
+  const org = db.prepare('select * from organizations where id = ?').get(envelope.org_id);
+  deliverWebhook(org, 'envelope.declined', envelope).catch(() => {});
+
   res.json({ ok: true });
 });
 

@@ -6,6 +6,7 @@ const path = require('node:path');
 require('./src/db'); // applies migrations on boot
 
 const { requireOrgSession, requirePlatformAdmin } = require('./src/middleware/requireOrgSession');
+const { requireApiKey } = require('./src/middleware/requireApiKey');
 const { verify: verifySignedUrl } = require('./src/lib/signedUrl');
 const { readFile } = require('./src/lib/storage');
 
@@ -15,6 +16,9 @@ const templateRoutes = require('./src/routes/org/templates');
 const envelopeRoutes = require('./src/routes/org/envelopes');
 const signerRoutes = require('./src/routes/public/signer');
 const platformOrgRoutes = require('./src/routes/platform/organizations');
+const v1EnvelopeRoutes = require('./src/routes/v1/envelopes');
+const v1TemplateRoutes = require('./src/routes/v1/templates');
+const apiKeyRoutes = require('./src/routes/org/apiKey');
 
 const app = express();
 
@@ -26,7 +30,10 @@ app.use('/api/org/members', requireOrgSession, memberRoutes);
 app.use('/api/org/templates', requireOrgSession, templateRoutes);
 app.use('/api/org/envelopes', requireOrgSession, envelopeRoutes);
 app.use('/api/platform/organizations', requireOrgSession, requirePlatformAdmin, platformOrgRoutes);
+app.use('/api/org/integration', requireOrgSession, apiKeyRoutes);
 app.use('/api/public', signerRoutes);
+app.use('/api/v1/envelopes', requireApiKey, v1EnvelopeRoutes);
+app.use('/api/v1/templates', requireApiKey, v1TemplateRoutes);
 
 // Private files are never served off disk by path — only through a
 // short-lived signed token (local-disk equivalent of a Supabase signed URL).

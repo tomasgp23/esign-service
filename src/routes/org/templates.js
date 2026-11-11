@@ -4,6 +4,7 @@ const { db } = require('../../db');
 const { requireOrgAdmin } = require('../../middleware/requireOrgSession');
 const { writeFile } = require('../../lib/storage');
 const { sign } = require('../../lib/signedUrl');
+const { extractVariables } = require('../../lib/templateVariables');
 
 const router = express.Router();
 
@@ -30,6 +31,7 @@ function serialize(t) {
     ...t,
     field_layout: t.field_layout ? JSON.parse(t.field_layout) : null,
     signer_roles: JSON.parse(t.signer_roles),
+    variables: JSON.parse(t.variables || '[]'),
     esign_allowed: !!t.esign_allowed,
     is_active: !!t.is_active,
   };
@@ -79,12 +81,14 @@ router.post('/', requireOrgAdmin, async (req, res) => {
     writeFile(req.user.orgId, basePdfPath, bytes);
   }
 
+  const variables = kind === 'html' ? extractVariables(bodyHtml || '') : [];
+
   const id = crypto.randomUUID();
   db.prepare(
     `insert into esign_templates
       (id, org_id, family_key, version, name, kind, body_html, base_pdf_path, field_layout, signer_roles,
-       esign_allowed, created_by)
-     values (?,?,?,?,?,?,?,?,?,?,0,?)`,
+       variables, esign_allowed, created_by)
+     values (?,?,?,?,?,?,?,?,?,?,?,0,?)`,
   ).run(
     id,
     req.user.orgId,
@@ -96,9 +100,10 @@ router.post('/', requireOrgAdmin, async (req, res) => {
     kind === 'pdf' ? basePdfPath : null,
     kind === 'pdf' ? JSON.stringify(fieldLayout || []) : null,
     JSON.stringify(roles),
+    JSON.stringify(variables),
   );
 
-  res.json({ ok: true, id, familyKey, version });
+  res.json({ ok: true, id, familyKey, version, variables });
 });
 
 router.post('/:id/set-allowed', requireOrgAdmin, (req, res) => {

@@ -22,9 +22,28 @@ function fileToBase64(file) {
   });
 }
 
+// Inserts the "you're previewing org X as role Y" banner and dims every
+// control on the page — called automatically by requireClientOrg().
+function renderImpersonationBanner(me) {
+  if (!me.impersonating) return;
+  document.body.classList.add('impersonating');
+  const banner = document.createElement('div');
+  banner.className = 'impersonation-banner';
+  banner.innerHTML = `
+    <span>Previewing <strong>${me.orgName}</strong> as <strong>${me.role === 'org_admin' ? 'Admin' : me.role === 'it' ? 'IT' : 'Member'}</strong> — read-only</span>
+    <button id="exitImpersonationBtn">Exit preview</button>
+  `;
+  document.body.insertBefore(banner, document.body.firstChild);
+  document.getElementById('exitImpersonationBtn').addEventListener('click', async () => {
+    await api('POST', '/api/platform/impersonate/stop', {});
+    location.href = `platform-org.html?id=${me.orgId}`;
+  });
+}
+
 // Every client-org page calls this first. Redirects to login if there's no
-// session, or to the platform dashboard if this is a platform admin (the
-// client-org pages have nothing meaningful to show them).
+// session, or to the platform dashboard if this is a platform admin with
+// no active preview (the client-org pages have nothing meaningful to show
+// a platform admin who isn't previewing a specific org/role).
 async function requireClientOrg() {
   try {
     const me = await api('GET', '/api/auth/me');
@@ -32,6 +51,7 @@ async function requireClientOrg() {
       location.href = 'platform.html';
       return null;
     }
+    renderImpersonationBanner(me);
     return me;
   } catch {
     location.href = 'login.html';

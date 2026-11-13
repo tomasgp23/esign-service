@@ -42,7 +42,13 @@ router.post('/setup', async (req, res) => {
 });
 
 router.get('/me', requireOrgSession, (req, res) => {
-  res.json({ role: req.user.role, orgId: req.user.orgId, email: req.user.email });
+  const base = { role: req.user.role, orgId: req.user.orgId, email: req.user.email };
+  if (req.user.impersonating) {
+    const org = db.prepare('select name from organizations where id = ?').get(req.user.orgId);
+    base.impersonating = true;
+    base.orgName = org?.name || null;
+  }
+  res.json(base);
 });
 
 // Creates a brand-new organization plus its first org_admin. Blocks a second

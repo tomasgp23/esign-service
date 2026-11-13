@@ -89,6 +89,27 @@ td { padding: 9px 8px; border-bottom: 1px solid #f1f2f4; vertical-align: middle;
 
 .hidden { display: none !important; }
 
+.impersonation-banner {
+  background: var(--ink); color: #fff; padding: 10px 24px; font-size: 13px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.impersonation-banner strong { color: var(--gold); }
+.impersonation-banner button {
+  background: transparent; border: 1px solid rgba(255,255,255,.4); color: #fff;
+  padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12.5px; flex-shrink: 0;
+}
+
+/* Previewing a role is read-only everywhere — every control inside a card
+   is visually disabled so it's obvious nothing here can actually be acted
+   on, matching what the backend already refuses to do. */
+body.impersonating .card input,
+body.impersonating .card textarea,
+body.impersonating .card select,
+body.impersonating .card button {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
 @media (max-width: 720px) {
   .app-shell { flex-direction: column; }
   .sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; padding: 10px 14px; align-items: center; }

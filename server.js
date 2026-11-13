@@ -5,7 +5,7 @@ const path = require('node:path');
 
 require('./src/db'); // applies migrations on boot
 
-const { requireOrgSession, requirePlatformAdmin } = require('./src/middleware/requireOrgSession');
+const { requireOrgSession, requirePlatformAdmin, blockWriteWhileImpersonating } = require('./src/middleware/requireOrgSession');
 const { requireApiKey } = require('./src/middleware/requireApiKey');
 const { verify: verifySignedUrl } = require('./src/lib/signedUrl');
 const { readFile } = require('./src/lib/storage');
@@ -16,6 +16,7 @@ const templateRoutes = require('./src/routes/org/templates');
 const envelopeRoutes = require('./src/routes/org/envelopes');
 const signerRoutes = require('./src/routes/public/signer');
 const platformOrgRoutes = require('./src/routes/platform/organizations');
+const impersonateRoutes = require('./src/routes/platform/impersonate');
 const v1EnvelopeRoutes = require('./src/routes/v1/envelopes');
 const v1TemplateRoutes = require('./src/routes/v1/templates');
 const v1AuthRoutes = require('./src/routes/v1/auth');
@@ -27,11 +28,12 @@ app.use(express.json({ limit: '25mb' }));
 app.use(cookieParser());
 
 app.use('/api/auth', authRoutes);
-app.use('/api/org/members', requireOrgSession, memberRoutes);
-app.use('/api/org/templates', requireOrgSession, templateRoutes);
-app.use('/api/org/envelopes', requireOrgSession, envelopeRoutes);
+app.use('/api/org/members', requireOrgSession, blockWriteWhileImpersonating, memberRoutes);
+app.use('/api/org/templates', requireOrgSession, blockWriteWhileImpersonating, templateRoutes);
+app.use('/api/org/envelopes', requireOrgSession, blockWriteWhileImpersonating, envelopeRoutes);
 app.use('/api/platform/organizations', requireOrgSession, requirePlatformAdmin, platformOrgRoutes);
-app.use('/api/org/integration', requireOrgSession, apiClientRoutes);
+app.use('/api/platform/impersonate', requireOrgSession, requirePlatformAdmin, impersonateRoutes);
+app.use('/api/org/integration', requireOrgSession, blockWriteWhileImpersonating, apiClientRoutes);
 app.use('/api/public', signerRoutes);
 app.use('/api/v1/auth', v1AuthRoutes);
 app.use('/api/v1/envelopes', requireApiKey, v1EnvelopeRoutes);

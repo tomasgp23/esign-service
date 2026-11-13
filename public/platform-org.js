@@ -9,6 +9,15 @@ async function boot() {
     return;
   }
   await loadDetail();
+
+  const HOME_PAGE_BY_ROLE = { org_admin: 'envelopes.html', it: 'integrations.html', member: 'envelopes.html' };
+  document.querySelectorAll('[data-view-as]').forEach((btn) =>
+    btn.addEventListener('click', async () => {
+      const role = btn.dataset.viewAs;
+      await api('POST', `/api/platform/impersonate/${orgId}/start`, { role });
+      location.href = HOME_PAGE_BY_ROLE[role];
+    }),
+  );
 }
 
 async function loadDetail() {
